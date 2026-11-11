@@ -1,0 +1,3 @@
+# Install the official IBKR Python API version compatible with your TWS/Gateway.
+# The audit script itself uses only the Python standard library.
+ibapi>=10.19

@@ -1,0 +1,372 @@
+                                                         QUANT BORICUA | DOCUMENTO DE DESARROLLO Y OPERACIÓN
+
+
+
+
+                                               QUANT BORICUA
+
+  Desarrollo e implementación del Runner
+            IBKR Triple Shadow
+    Explicación operativa, modelo actual de resultados y comparación con el
+                                Runner original
+
+
+
+ Versión documentada                                           runner_ibkr_triple_shadow_v1_2_3.py
+
+
+ Estado actual                                                 Observer / Disarmed / No Orders
+
+
+ Instrumento                                                   XAUUSD / CMDTY / SMART / USD en IBKR
+
+
+ Fecha                                                         16 de septiembre de 2026
+
+
+
+
+                                                        Propósito
+             Dejar por escrito cómo nació la idea, cómo se ejecuta hoy, qué representa el resultado
+            virtual, qué no está activo todavía y por qué se eligió una comparación controlada antes
+                                              de operar capital real.
+
+
+
+
+Quant Boricua • Runner IBKR Triple Shadow v1.2.3 • Investigación / no recomendación de inversión
+                                                                                                       Página 1
+                                                         QUANT BORICUA | DOCUMENTO DE DESARROLLO Y OPERACIÓN
+
+
+
+
+Resumen ejecutivo
+El Runner IBKR Triple Shadow nació como una forma prudente de reconstruir y comprobar, dentro de
+nuestro entorno local de Puerto Rico y Estados Unidos, el comportamiento observado del Runner de XAUUSD
+utilizado en Exness. El problema inicial no era solamente la señal: también había que resolver diferencias de
+reloj, zona horaria, instrumento, spread, datos y forma de ejecución.
+En lugar de escoger una interpretación y asumir que era correcta, conservamos tres lecturas en paralelo —A,
+B y C— sobre los mismos datos. Todas trabajan como sombras: detectan señales y simulan posiciones, pero no
+envían órdenes al broker. La variante C es la referencia confirmada para la ventana operativa vinculada al
+reloj de Exness y es la única que reportamos públicamente mediante telemetría.
+Situación actual. El sistema está conectado a TWS Paper de Interactive Brokers, observa XAUUSD y registra
+operaciones virtuales. Está expresamente desarmado: no compra ni vende en IBKR.
+Cuenta de $1,000. No está activa en este momento. No existe todavía una curva oficial basada en $1,000 y no
+debemos interpretar los dólares virtuales como rendimiento porcentual de esa cuenta. La fase de $1,000 se
+activará posteriormente, con fecha de inicio declarada y sin mezclar resultados anteriores.
+Unidad actual. Cada posición virtual de C utiliza 1 onza de XAUUSD, equivalente de referencia a 0.01 lote
+estándar cuando un lote de oro representa 100 onzas. Por cada movimiento favorable o adverso de $1.00 en el
+precio del oro, el resultado virtual cambia aproximadamente $1.00, antes de comisiones, swap y
+deslizamiento.
+
+Qué significa Triple Shadow
+                Sombra                             Ventana de entrada                              Función
+
+
+ A                                        Helsinki 11:00–15:59                     Conserva la interpretación heredada
+                                                                                   completa para comparación.
+
+ B                                        Helsinki 13:00–14:59                     Prueba una ventana heredada más
+                                                                                   estrecha.
+
+ C                                        UTC 11:00–15:59; Puerto Rico 07:00–      Replica el reloj confirmado de
+                                          11:59                                    decisión de Exness y alimenta la
+                                                                                   telemetría.
+
+
+Las tres sombras evalúan la misma barra M15 terminada. A y B permanecen para comparación histórica. C
+usa la hora de decisión —el cierre de la barra completada— y es la candidata operativa principal.
+
+Alcance de esta comparación
+No hemos auditado el código fuente del EA original de Exness. Por tanto, la comparación con el Runner
+original es funcional y conductual: se apoya en horarios, operaciones observadas, tamaño 0.01, reportes del
+grupo y resultados visibles. Lo que afirmamos sobre nuestro archivo Python sí proviene de la revisión directa
+del código v1.2.3.
+
+
+
+
+Quant Boricua • Runner IBKR Triple Shadow v1.2.3 • Investigación / no recomendación de inversión
+                                                                                                                  Página 2
+                                                         QUANT BORICUA | DOCUMENTO DE DESARROLLO Y OPERACIÓN
+
+
+
+
+Cómo desarrollamos la idea
+1. Partimos de un comportamiento real observable
+El punto de partida fueron las operaciones del Runner original en cuentas demo y reales de Exness. Vimos que
+las cuentas de Juan Camilo y Edward tendían a abrir en horarios muy parecidos, con dirección y duración
+semejantes, aunque el spread, el deslizamiento y el resultado final variaban entre cuentas. Eso nos dio un
+patrón de referencia, no una copia de código.
+
+2. Identificamos el problema del reloj
+La misma etiqueta horaria puede significar cosas distintas según se use la apertura de la barra, el cierre de la
+barra, Helsinki, UTC o Puerto Rico. Esa diferencia de 15 minutos y de zona horaria puede decidir si una señal
+entra o queda fuera. Para evitar ajustar el sistema por intuición, preservamos las interpretaciones A y B y
+añadimos C con el reloj confirmado.
+
+3. Separamos señal, ejecución y validación
+   Señal: se calcula únicamente con barras completas para evitar decisiones sobre una vela todavía
+    cambiante.
+   Ejecución: es virtual; el programa calcula una entrada y una salida, pero no transmite órdenes.
+   Validación: cada variante guarda eventos, señales y operaciones para comparar resultados con
+    evidencia.
+   Publicación: solamente C envía telemetría a Operaciones Reales, evitando mezclar tres experimentos
+    en una sola estadística.
+
+4. Adaptamos el Runner al entorno IBKR
+Exness y IBKR no ofrecen exactamente el mismo producto ni la misma microestructura. En Exness
+observamos un CFD de XAUUSD; en IBKR utilizamos el contrato XAUUSD clasificado como CMDTY y
+encaminado por SMART. La señal se reconstruye con precios MIDPOINT y el spread BID/ASK se solicita
+cuando hace falta. El objetivo es comparar la lógica con datos reproducibles, no fingir que ambos brokers son
+idénticos.
+
+5. Añadimos controles operativos
+   Modo Observer / Disarmed / No Orders, visible al iniciar y en cada decisión.
+   Persistencia de estado para no duplicar barras ni operaciones al reiniciar.
+   Reconexión segura: al perder TWS se pausan solicitudes, se reconecta y se recuperan datos antes de
+    continuar.
+   Telemetría con cola de pendientes para reenviar eventos cuando el endpoint vuelve a estar
+    disponible.
+   Máximo de tres entradas virtuales por día y una posición abierta por sombra.
+
+
+
+
+Quant Boricua • Runner IBKR Triple Shadow v1.2.3 • Investigación / no recomendación de inversión
+                                                                                                         Página 3
+                                                         QUANT BORICUA | DOCUMENTO DE DESARROLLO Y OPERACIÓN
+
+
+
+
+Cómo se ejecuta actualmente
+1.   TWS Paper permanece abierto con la API disponible en 127.0.0.1:7497 y el cliente 2461.
+2.   El programa valida XAUUSD, conId 69067924, CMDTY, SMART, USD y tick mínimo de 0.01.
+3.   Solicita y mantiene datos M15 y H4. Solo procesa barras ya terminadas.
+4.   Calcula EMA 50 en H4, RSI 14 y ATR 14 en M15, y mide la distancia del precio frente a la EMA en
+     unidades de ATR.
+5.   A, B y C reciben la misma señal técnica, pero aplican sus propias ventanas horarias.
+6.   Cuando una sombra acepta la señal, abre una posición virtual; no se llama a ninguna función de
+     orden del broker.
+7.   La posición se administra 24x5 con las barras M15 completadas, incluso fuera de la ventana de
+     nuevas entradas.
+8.   C informa apertura, cierre, latido y estado de conexión a Operaciones Reales.
+9.   Todos los eventos y estados relevantes quedan en archivos CSV y JSON para auditoría posterior.
+
+Reglas técnicas congeladas
+                Componente                             Regla actual                           Lectura sencilla
+
+
+ Tendencia                                EMA 50 en H4                             Ubica el precio respecto a una
+                                                                                   referencia de contexto.
+
+ Disparo                                  Cruce del RSI 14 por 50                  Busca un cambio de impulso en M15.
+
+ Distancia                                Más de 0.5 ATR desde EMA                 Evita aceptar cruces demasiado
+                                                                                   pegados a la media.
+
+ Stop inicial                             1.2 ATR                                  La salida defensiva se adapta a la
+                                                                                   volatilidad.
+
+ Activación                               +3 ATR                                   La protección avanzada solo comienza
+                                                                                   después de un movimiento amplio.
+
+ Bloqueo                                  +2 ATR                                   Al activarse, intenta conservar parte
+                                                                                   del avance.
+
+ Trailing                                 2.5 ATR                                  Acompaña el movimiento con
+                                                                                   distancia variable.
+
+ Frecuencia                               Máximo 3 por día                         Impide sobreoperar dentro de una
+                                                                                   misma sesión.
+
+
+
+Condición de señal
+Una señal LONG requiere que el precio esté más de 0.5 ATR por encima de la EMA H4 y que el RSI cruce de
+menos de 50 a más de 50. Una señal SHORT exige el espejo: precio más de 0.5 ATR por debajo de la EMA y RSI
+cruzando de más de 50 a menos de 50. Si no hay BID y ASK frescos al momento de una señal, la barra queda
+pendiente y no se fuerza una entrada con información incompleta.
+
+
+
+
+Quant Boricua • Runner IBKR Triple Shadow v1.2.3 • Investigación / no recomendación de inversión
+                                                                                                                    Página 4
+                                                         QUANT BORICUA | DOCUMENTO DE DESARROLLO Y OPERACIÓN
+
+
+
+
+Cómo calculamos pérdidas y ganancias hoy
+Posición virtual de referencia
+La estrategia C utiliza por defecto 1.0 onza virtual de XAUUSD. El propio código registra esta equivalencia
+como 0.01 lote estándar de oro cuando 1 lote representa 100 onzas. Es una unidad de comparación; no es una
+orden ni una posición mantenida por IBKR.
+
+Precio de entrada
+      LONG: cierre MIDPOINT de la barra + la mitad del spread observado.
+      SHORT: cierre MIDPOINT de la barra − la mitad del spread observado.
+El spread se incorpora al precio virtual de entrada cuando BID y ASK están disponibles. La salida virtual
+ocurre al nivel de stop o trailing detectado por el rango de una barra M15 completa.
+
+Fórmula en dólares
+                           Dirección                                                    Cálculo
+
+
+    LONG                                                       (precio de salida − precio de entrada) × onzas virtuales
+
+    SHORT                                                      (precio de entrada − precio de salida) × onzas virtuales
+
+
+Con 1 onza virtual, una variación neta de $8.50 produce aproximadamente +$8.50 o −$8.50, según la dirección.
+Ejemplo SHORT: entrada 4,380.00 y salida 4,388.50 equivale a (4,380.00 − 4,388.50) × 1 = −$8.50.
+
+Resultado normalizado en R
+Además de dólares, el archivo registra result_r. Un R representa el riesgo inicial definido por 1.2 ATR. La
+fórmula es el movimiento favorable o adverso desde la entrada dividido entre 1.2 ATR. Así podemos comparar
+operaciones de días con distinta volatilidad sin depender solamente de dólares.
+
+Qué incluye y qué no incluye
+                           Elemento                                                  Estado actual
+
+
+    Spread                                                     Se incorpora en la entrada virtual cuando existe cotización
+                                                               BID/ASK.
+
+    Comisión                                                   No se descuenta actualmente.
+
+    Swap o financiación                                        No se descuenta actualmente.
+
+    Deslizamiento de ejecución                                 No se simula como fill real; no existe orden de broker.
+
+    Pérdida/ganancia flotante                                  Se comunica en los latidos mientras C permanece abierta.
+
+    Resultado realizado                                        Se acumula al cerrar cada operación virtual C.
+
+
+
+
+Quant Boricua • Runner IBKR Triple Shadow v1.2.3 • Investigación / no recomendación de inversión
+                                                                                                                    Página 5
+                                                           QUANT BORICUA | DOCUMENTO DE DESARROLLO Y OPERACIÓN
+
+
+
+
+La cuenta de $1,000 todavía no está activa
+El parámetro de capital virtual existe, pero hoy permanece sin definir. Esto significa que la plataforma puede
+mostrar operaciones y resultados virtuales en dólares, pero no debe atribuirles todavía un ROI, equity o
+drawdown oficial de una cuenta de $1,000. Los dólares actuales pertenecen a la unidad fija de 1 onza.
+Cuando se active la fase de $1,000, se declarará una fecha de inicio nueva. A partir de allí, el balance de
+referencia será $1,000 más la suma de resultados virtuales cerrados. El riesgo porcentual de cada entrada se
+calculará como riesgo en dólares dividido entre $1,000. No se convertirán retrospectivamente las
+observaciones anteriores para evitar mezclar metodologías.
+
+
+Comparación arroz y habichuelas
+La comparación sencilla es esta: el Runner original es el carro que ya corre en la calle de Exness; nuestro
+Python es un banco de prueba conectado a IBKR que imita, mide y cuestiona el comportamiento antes de
+permitirle tocar dinero.
+
+                   Tema                           Runner original observado                 Runner IBKR Triple Shadow
+
+
+    Plataforma                            Exness / MetaTrader / EA                   Interactive Brokers TWS / Python
+
+    Producto                              CFD de XAUUSD                              XAUUSD clasificado CMDTY por IBKR
+
+    Dinero real                           Puede operar cuentas demo o reales         No opera; observer desarmado
+
+    Tamaño observado                      0.01 lote                                  1 onza virtual, referencia ≈ 0.01 lote
+
+    Precio                                Cotización y fills de Exness               M15 MIDPOINT; BID/ASK bajo demanda
+
+    Reloj                                 Comportamiento inferido por operaciones    A, B y C comparan tres ventanas explícitas
+
+    Entrada                               Según el EA original, código no auditado   Reglas visibles y reproducibles en Python
+
+    Gestión                               Observada por duración y salida            Stop 1.2 ATR; activar 3; lock 2; trail 2.5
+
+    Resultado                             P&L real del broker con sus costos         P&L virtual de 1 onza; costos parciales
+
+    Auditoría                             Historial del broker y panel               CSV, JSON, consola y telemetría C
+
+    Objetivo                              Ejecutar la estrategia original            Validar, comparar y luego mejorar
+                                                                                     selectividad
+
+
+
+
+Lo que no debemos afirmar
+      Que el Python es una copia exacta línea por línea del EA original.
+      Que un precio o spread de IBKR será idéntico al CFD de Exness.
+      Que los resultados virtuales actuales representan una cuenta real de $1,000.
+      Que un día favorable o una operación filtrada demuestra superioridad estadística.
+
+Lo que sí podemos afirmar
+      El archivo Python aplica reglas explícitas, congeladas y auditables.
+      No envía órdenes al broker y su consola declara TRADING=NO.
+      C usa el reloj confirmado UTC 11:00–15:59 basado en la hora de decisión de la barra terminada.
+      La telemetría publica únicamente la sombra C y conserva A/B como laboratorio interno.
+      El sistema puede reconstruir su estado y reconectarse con seguridad a TWS.
+Quant Boricua • Runner IBKR Triple Shadow v1.2.3 • Investigación / no recomendación de inversión
+                                                                                                                            Página 6
+                                                         QUANT BORICUA | DOCUMENTO DE DESARROLLO Y OPERACIÓN
+
+
+
+
+Por qué decidimos hacerlo de esta forma
+Primero evidencia, después capital
+El mayor riesgo no era perder una señal, sino confundir una coincidencia con una estrategia validada. El
+modo Shadow permite reunir una muestra forward sin riesgo de ejecución. También permite detectar
+diferencias de horario, precio y spread antes de atribuirlas a la lógica.
+
+Una sola variable importante a la vez
+Mantener A, B y C evita reescribir el pasado cada vez que aparece una hipótesis nueva. Las reglas técnicas
+permanecen congeladas; la diferencia principal entre sombras es el horario. Cuando exista una muestra
+suficiente, cualquier cambio deberá probarse por separado y documentarse con una nueva versión.
+
+Selectividad antes que cantidad
+Nuestro objetivo no es perseguir todas las entradas de los Runners de Camilo y Edward. El original funciona
+como benchmark. Buscamos una versión simple que descarte operaciones débiles, mantenga oportunidades
+de calidad y produzca un beneficio neto superior después de costos. Menos operaciones puede ser mejor si
+mejora la expectativa y reduce el drawdown.
+
+Ejemplo observado del criterio
+El 15 de septiembre de 2026, las cuentas de Exness observadas mostraron dos ventas similares. La sombra C
+reconoció la primera señal y no aceptó la segunda. Las tres cuentas cerraron ambas operaciones con pérdidas
+cercanas entre sí. Este caso ilustra la posible utilidad de ser más selectivos, pero es solamente una
+observación; no constituye prueba suficiente de superioridad.
+
+Criterios para activar la etapa de $1,000
+   Acumular una muestra forward significativa de operaciones C cerradas; como referencia inicial,
+    alrededor de 30.
+   Evaluar ganancia neta, tasa de acierto, promedio por operación, R medio, drawdown y
+    comportamiento por horario.
+   Modelar de forma conservadora comisión, financiación y deslizamiento antes de concluir
+    rentabilidad.
+   Declarar la fecha oficial, el capital inicial de $1,000 y la metodología de tamaño de posición.
+   Confirmar que el producto, margen y tamaño mínimo permitido por IBKR sean compatibles con el
+    capital disponible.
+   Mantener límites de pérdida y la capacidad de volver inmediatamente a modo desarmado.
+
+
+Conclusión
+El Runner IBKR Triple Shadow no nació para maquillar al original ni para apresurar una cuenta real. Nació
+para convertir una idea observada en un experimento controlado, reproducible y compartible. A y B
+preservan las hipótesis históricas; C representa la interpretación horaria confirmada y la telemetría pública.
+Hoy medimos una posición virtual fija de 1 onza y no una cuenta activa de $1,000. La activación futura del
+capital será una etapa nueva, con sus propios controles y una línea de partida clara.
+En arroz y habichuelas: primero vemos si el motor prende, si corre derecho y si consume lo esperado.
+Después de suficientes millas de prueba decidimos si le ponemos los $1,000.
+
+
+
+Quant Boricua • Runner IBKR Triple Shadow v1.2.3 • Investigación / no recomendación de inversión
+                                                                                                        Página 7
+

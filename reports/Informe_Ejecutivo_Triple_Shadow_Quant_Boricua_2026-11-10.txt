@@ -1,0 +1,219 @@
+                                      QUANT BORICUA
+
+   Informe ejecutivo de validación del Runner
+              IBKR Triple Shadow
+   Resultados forward y análisis de drawdown de la estrategia XAUUSD
+
+
+                         Corte de datos 10 de noviembre de 2026
+                       Preparado para el grupo Quant de Juan Camilo
+                Modo Observer | Sin órdenes al broker | Investigación técnica
+
+
+
+
+                                    Conclusión principal
+Shadow C es la variante con mejor comportamiento entre las tres ventanas. Cerró 33 operaciones
+con P&L de -$23,63, sufrió un drawdown máximo realizado de 9,88% sobre una reconstrucción de
+ $1.000 y redujo el drawdown vigente a 2,46% después de una operación ganadora de +$50,78. La
+evidencia favorece continuar la recolección forward, pero no justifica todavía operar capital real.
+
+
+
+
+                                                                      Quant Boricua | Informe técnico | 1
+Resumen ejecutivo
+Este informe presenta la auditoría de las entradas y salidas virtuales registradas por el Runner
+IBKR Triple Shadow v1.2.4. El objetivo es medir la calidad operativa de las ventanas A, B y C y
+cuantificar el drawdown de la variante C, vinculada al horario confirmado de Exness. Todos los
+resultados corresponden a posiciones virtuales de una onza de XAUUSD; el programa permaneció
+desarmado y no transmitió órdenes.
+                      Métrica principal                                 Shadow C
+
+    Operaciones cerradas                                                    33
+
+    Ganadoras y perdedoras                                                9 / 24
+
+    Tasa de acierto                                                      27,27%
+
+    P&L acumulado                                                        -$23,63
+
+    Balance hipotético actual                                            $976,37
+
+    Máximo drawdown realizado                                        -$98,90 | -9,88%
+
+    Drawdown vigente                                                 -$24,65 | -2,46%
+
+    Máximo drawdown normalizado                                          -11,30 R
+
+    Mayor racha perdedora                                             7 operaciones
+
+
+
+
+Dictamen
+La estrategia C mostró capacidad de recuperación y terminó claramente mejor que A y B, pero su
+drawdown máximo prácticamente alcanzó el umbral de pausa del 10%. Recomendamos
+mantenerla en Observer, preservar las reglas actuales y ampliar la muestra antes de considerar
+cualquier fase con capital.
+
+Metodología y alcance
+     Inicio del monitoreo forward: 31 de agosto de 2026 a las 21:33 UTC.
+     Inicio de la etapa formal de paridad: 10 de septiembre de 2026 a las 20:33 UTC.
+     Primera operación virtual del registro auditado: 15 de septiembre de 2026.
+     Capital de referencia reconstruido: $1.000, sin afirmar dimensionamiento histórico fijo al 1%.
+     Unidad histórica: una onza virtual de XAUUSD, equivalente aproximado a 0,01 lote estándar de
+      oro.
+     Drawdown calculado sobre operaciones cerradas. El archivo actual no permite reconstruir con
+      exactitud el mínimo flotante intraposición de cada vela M15.
+
+
+
+
+                                                                        Quant Boricua | Informe técnico | 2
+Resultados comparativos de las tres sombras
+     Sombra      Ventana         Ops           G/P           P&L           Máx DD           Lectura
+
+                 Helsinki
+ A                               21           3 / 18       -$126,72        12,67%            Débil
+                11:00-15:59
+
+                 Helsinki
+ B                                7            0/7         -$64,74          6,47%        No favorable
+                13:00-14:59
+
+                UTC 11:00-                                                                   Mejor
+ C                               33           9 / 24       -$23,63          9,88%
+                  15:59                                                                     variante
+
+
+
+La menor pérdida absoluta de B no indica superioridad: tomó solamente siete operaciones y perdió
+las siete. A acumuló 18 pérdidas en 21 operaciones. C produjo nueve ganadoras, capturó los
+movimientos de mayor extensión y recuperó buena parte de la caída sufrida en octubre.
+
+Curva de capital reconstruida de Shadow C
+
+
+
+
+La curva utiliza $1.000 como referencia y suma el P&L histórico de una onza. No representa una
+cuenta que ajustara el tamaño para arriesgar exactamente 1% en cada operación.
+
+
+
+
+                                                                      Quant Boricua | Informe técnico | 3
+Anatomía del drawdown
+              Momento                    Capital reconstruido                   Significado
+
+ Máximo 5 oct 2026                            $1.001,02               Pico histórico de equity cerrada
+
+                                                                      Valle después de siete pérdidas
+ Mínimo 21 oct 2026                            $902,12
+                                                                               consecutivas
+
+ Drawdown máximo                           $98,90 | 9,88%             Caída desde el pico hasta el valle
+
+                                                                        Recuperación parcial tras el
+ Capital al corte                              $976,37
+                                                                            ganador del 9 nov
+
+                                                                       Distancia restante al máximo
+ Drawdown vigente                          $24,65 | 2,46%
+                                                                                 histórico
+
+
+
+La última posición LONG, abierta el 6 de noviembre y cerrada el 9 de noviembre, ganó $50,78 y 3,93
+R mediante trailing. Esta operación redujo el drawdown vigente, pero la curva todavía no ha
+establecido un máximo nuevo.
+
+Lectura operativa
+El valle del 21 de octubre no fue provocado por una sola pérdida extraordinaria, sino por una
+secuencia persistente de stops. Esto concentra el riesgo en la frecuencia de pérdidas consecutivas y
+confirma que el control de racha y el monitoreo del drawdown deben formar parte de cualquier
+fase futura con capital. La operación ganadora del 9 de noviembre demuestra capacidad de
+recuperación, pero no elimina la necesidad de una muestra más amplia.
+
+
+
+
+                                                                       Quant Boricua | Informe técnico | 4
+Integridad y trazabilidad
+                          Control                                       Resultado
+
+    Eventos auditados                                     122 eventos | 61 entradas y 61 salidas
+
+    Emparejamiento                                    Todas las entradas tienen cierre correspondiente
+
+    Posiciones al corte                                          Ninguna posición abierta
+
+    Conciliación de P&L                               -$23,625737 coincide con telemetry_realized_usd
+
+    Señales registradas                                                     71
+
+    Órdenes al broker                                         Ninguna | broker_order = NO
+
+                                                    LONG reconstruida y bloqueada correctamente como
+    Última señal 9 nov
+                                                                          STALE
+
+
+
+Los archivos no presentan entradas duplicadas, cierres huérfanos ni diferencias entre el P&L
+recalculado y el acumulado persistido. Esta concordancia permite considerar confiable el
+drawdown realizado informado.
+
+Limitaciones
+      El drawdown de 9,88% corresponde a equity cerrada; el peor drawdown flotante podría haber
+       sido mayor.
+      La reconstrucción de $1.000 mantiene una onza fija y no recalcula tamaños históricos para
+       riesgo constante del 1%.
+      No se incorporan completamente comisión, financiación, swap ni deslizamiento de una
+       ejecución real.
+      IBKR XAUUSD CMDTY y el CFD XAUUSD de Exness no comparten necesariamente idéntica
+       microestructura, spread o formación de velas.
+      Una recuperación fuerte no demuestra por sí sola rentabilidad estadística estable.
+
+Recomendación técnica
+Continuar la recolección forward de Shadow C sin activar órdenes. Mantener congelados los
+parámetros de entrada y salida mientras se completa una muestra mayor y añadir una serie de
+equity flotante en cada vela M15. No recomendamos aumentar riesgo ni iniciar capital real hasta
+verificar que el drawdown permanece controlado después de costos y bajo una muestra más
+amplia.
+                          Umbral                                     Acción acordada
+
+    0% a 5%                                                  Operación observacional normal
+
+    5% a 8%                                                   Advertencia y revisión de racha
+
+    8% a 10%                                                  Detener cualquier escalamiento
+
+    Más de 10%                                              Pausar y auditar antes de continuar
+
+
+
+
+                                                                        Quant Boricua | Informe técnico | 5
+Próximos pasos
+   Registrar equity y P&L flotante de Shadow C en cada cierre M15.
+   Ampliar la muestra forward y reportar ganancia neta, profit factor, expectativa, R medio y
+    tiempo de recuperación.
+   Comparar señales coincidentes con Juan Camilo y Edward sin confundir coincidencias
+    reconstruidas con evidencia forward.
+   Modelar costos conservadores antes de valorar una cuenta real de $1.000.
+   Preservar A y B como laboratorio, sin mezclarlas con la curva pública de C.
+
+Conclusión
+Shadow C es la única variante que, a este corte, justifica continuar la validación. Su P&L permanece
+ligeramente negativo, pero su recuperación y su capacidad para capturar movimientos amplios son
+superiores a A y B. El drawdown máximo de 9,88% obliga a mantener disciplina: primero
+completar evidencia forward y medir el riesgo flotante; después decidir si la estrategia merece
+capital.
+
+
+
+
+                                                                      Quant Boricua | Informe técnico | 6
+

@@ -19,7 +19,7 @@ All recorded positions are virtual. The `broker_order` field is `NO` throughout 
 - `src/`: observer runner and optional telemetry adapter.
 - `data/`: recorded signals, virtual-trade events, and observer state.
 - `analysis/`: reproducible performance and drawdown calculation.
-- `reports/`: development and executive audit reports.
+- `reports/`: reviewed text exports of the development and executive audit reports. Editable Word and binary PDF originals are retained outside the public repository.
 - `SECURITY.md`: safe handling of credentials and private infrastructure.
 
 ## Reproduce the audit

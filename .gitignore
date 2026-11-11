@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.log
+*_pending.jsonl
+runner_ibkr_dual_observer_v1_logs/
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
